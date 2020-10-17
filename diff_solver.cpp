@@ -1,14 +1,14 @@
 #include <iostream>
 #include <armadillo>
 #include <fstream>
+
 #include "planet.h"
 #include "diff_solver.hpp"
 
 using namespace std;
 using namespace arma;
 
-mat diff_solver::diffEq(mat current_XV, planet *planets[], int n){
-  float Gconst = 4*M_PI*M_PI;
+mat diff_solver::diffEq(mat current_XV){
   mat dydt = zeros(n,6);
   for(int i=0;i<n;i++){
     for(int j=0;j<3;j++){
@@ -36,9 +36,9 @@ mat diff_solver::diffEq(mat current_XV, planet *planets[], int n){
             r_ij = zeros(3);
           }
           else{
-            r_ij = (r_i-r_j);
+            r_ij = (r_i-r_j)*1/norm(r_i-r_j,2);
           }
-        a_i = -Gconst * planets[j]->mass * 1/pow(norm(r_i-r_j),3) * r_ij + a_i;
+        a_i = -Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij + a_i;
       }
 
   }
@@ -52,8 +52,7 @@ mat diff_solver::diffEq(mat current_XV, planet *planets[], int n){
 
 
 
-mat diff_solver::step(planet *planets[], int n,float deltaT){
-  planets[1]->position[0]=2;
+mat diff_solver::step(string method_){
   mat current_XV = zeros(n,6);
   //Updating current position
   for(int i=0;i<n;i++){
@@ -63,34 +62,42 @@ mat diff_solver::step(planet *planets[], int n,float deltaT){
       }
     }
 
-
-    //Euler-Cromer
-
-    mat next_XV = zeros(n,6);
-
-    mat dydt_next = zeros(n,6);
-    mat new_XV = zeros(n,6);
-
-    mat dydt = diffEq(current_XV, planets, n);
-    next_XV = dydt*deltaT + current_XV;
-    dydt_next = diffEq(next_XV, planets, n);
-
-    for(int i=0; i<n; i++){
-      for(int j=0;j<3;j++){
-        new_XV(i,j) = dydt_next(i,j)*deltaT+current_XV(i,j);
-        new_XV(i,j+3) = dydt(i,j+3)*deltaT + current_XV(i,j+3);
+    if(method=="Euler"){
+      //Euler
+      mat dydt = zeros(n,6);
+      dydt = diffEq(current_XV);
+      return current_XV + dydt*deltaT;
       }
-    }
-    return new_XV;
 
-    /*
+    if(method=="Euler-Cromer"){
+      //Euler-Cromer
+      mat next_XV = zeros(n,6);
+
+      mat dydt_next = zeros(n,6);
+      mat new_XV = zeros(n,6);
+
+      mat dydt = diffEq(current_XV);
+      next_XV = dydt*deltaT + current_XV;
+      dydt_next = diffEq(next_XV);
+
+      for(int i=0; i<n; i++){
+        for(int j=0;j<3;j++){
+          new_XV(i,j) = dydt_next(i,j)*deltaT+current_XV(i,j);
+          new_XV(i,j+3) = dydt(i,j+3)*deltaT + current_XV(i,j+3);
+        }
+      }
+    return new_XV;
+    }
+
+    if(method=="Velocity-Verlet"){
+
     //Velocity-Verlet
     mat new_XV = zeros(n,6);
 
-    mat dydt = diffEq(current_XV, planets, n);
+    mat dydt = diffEq(current_XV);
     mat next_XV = dydt*deltaT + current_XV;
 
-    mat dydt_next = diffEq(next_XV, planets, n);
+    mat dydt_next = diffEq(next_XV);
 
     for(int i=0;i<n;i++){
       for(int j=0;j<3;j++){
@@ -99,36 +106,43 @@ mat diff_solver::step(planet *planets[], int n,float deltaT){
       }
     }
     return new_XV;
-    */
+  }
 
 
 
-    /*
-    //Euler
-    mat dydt = zeros(n,6);
-    dydt = diffEq(current_XV, planets, n);
-    current_XV + dydt*deltaT;
-    */
-    /*
+
+
+    if(method=="RK4"){
     //RK4
-    mat k1 = diffEq(current_XV, planets, n);
-    mat k2 = diffEq(current_XV + k1*deltaT*1./2, planets, n);
-    mat k3 = diffEq(current_XV+k2*deltaT*1./2, planets, n);
-    mat k4 = diffEq(current_XV+k3*deltaT, planets, n);
-    dydt = (k1 + 2*k2 + 2*k3 + k4)/6;
+    mat k1 = diffEq(current_XV);
+    mat k2 = diffEq(current_XV + k1*deltaT*1./2);
+    mat k3 = diffEq(current_XV+k2*deltaT*1./2);
+    mat k4 = diffEq(current_XV+k3*deltaT);
+    mat dydt = (k1 + 2*k2 + 2*k3 + k4)/6;
     return current_XV + dydt*deltaT;
-    */
+  }
 
+  else{
+    if(error_message==1){
+      error_message=0;
+      cout << "No method found, returning zeros." << endl;
+    }
+
+    return zeros(n,6);
+  }
 
 
 
 }
 
-void diff_solver::solve(planet *planets[], int n,float deltaT, int N,string filename){
+void diff_solver::solve(float deltaT_, int N,string filename, string method_){
+  method = method_;
+  deltaT = deltaT_;
   ofstream outfile(filename);
 
   vec t = linspace(0,N*deltaT,N);
-  outfile << "number_of_planets=" << n << " t:" << endl;
+  outfile << "number_of_planets=" << n << " integration_points=" << N
+  << " t:" << endl;
   outfile << t.t() << endl;
 
   mat current_XV = zeros(n,6);
@@ -140,10 +154,10 @@ void diff_solver::solve(planet *planets[], int n,float deltaT, int N,string file
       }
     }
 
-  //outfile << current_XV << endl;
+  outfile << current_XV << endl;
 
   for(int i=0;i<N;i++){
-    mat new_XV = step(planets,n,deltaT);
+    mat new_XV = step(method);
     for(int i=0;i<n;i++){
       for(int j=0;j<3;j++){
         planets[i]->position[j] = new_XV(i,j);

@@ -13,8 +13,16 @@ class diff_solver {
 private:
   //number of planets
   int n;
+  //gravitational constant
   float Gconst;
 
+  float deltaT;
+
+  string method;
+
+  int error_message;
+
+  float beta;
 
   planet **planets;
 
@@ -22,19 +30,20 @@ private:
 
 public:
 
-  mat diffEq(mat current_XV, planet *planets[], int n);
-  mat step(planet *planets[], int n,float deltaT);
-  void solve(planet *planets[], int n,float deltaT, int N,string filename);
+  mat diffEq(mat current_XV);
+  mat step(string method_);
+  void solve(float deltaT_, int N, string filename,string method_);
 
 
-  diff_solver(float Gconst_,int n_,planet *planets_[n_]){
+  diff_solver(float Gconst_,float beta_,int n_,planet *planets_[n_]){
+    error_message = 1;
     Gconst = Gconst_;
+    beta = beta_;
     n = n_;
     //planet *planets[n] = planets_;
     planets = planets_;
-    step(planets,n,0.001);
-    //planet *planets[n];
-    //planets = planets_;
+
+
   }
 };
 

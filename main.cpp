@@ -7,31 +7,28 @@
 using namespace std;
 using namespace arma;
 
-mat diffEq(mat current_XV, planet *planets[], int n);
-mat step(planet *planets[], int n,float deltaT);
-void solve(planet *planets[], int n,float deltaT, int N,string filename);
-
 int main(int argc, char const *argv[]) {
-  int n = 2; //number of planets
+  int n = 4; //number of planets
   planet *planets[n];
     planets[0] = new planet();
-    planets[1] = new planet(3*1E-6,1,0,0,0,2*M_PI,0);
-    //planets[2] = new planet(3*1E-6,2,0,0,4*M_PI,0,0);
-    //planets[3] = new planet(3*1E-6,3,3,3,4,4*M_PI,6);
+    planets[1] = new planet(3*1E-6,1,0,0,0,1.4*2*M_PI,0);
+    planets[2] = new planet(3*1E-6,2,0,0,0,2*M_PI*1./sqrt(2),0);
+    planets[3] = new planet(3*1E-6,3,0,0,0,2*M_PI*1./sqrt(3),0);
 
   //int len = end(planets)-begin(planets);
 
-  float deltaT = 0.001;
-  int N = 1500;
+  float deltaT = 0.01;
+  int N = 5000;
   string filename = "./data/test.txt";
 
   float Gconst = 4*M_PI*M_PI;
-
+  float beta = 2;
   diff_solver *test;
-  test = new diff_solver(Gconst,n,planets);
+  test = new diff_solver(Gconst,beta,n,planets);
+  string method = "RK4";
+  test->solve(deltaT,N,filename,method);
 
-  //solve(planets,len,deltaT,N,filename);
-
+  delete test;
   delete[] *planets;
 
 }
