@@ -1,6 +1,8 @@
 #include <armadillo>
+#include <iostream>
 #include "planet.h"
 
+using namespace std;
 using namespace arma;
 
 #ifndef DIFF_SOLVER_HPP
@@ -9,26 +11,31 @@ using namespace arma;
 
 class diff_solver {
 private:
-  int total_planets;
   //number of planets
   int n;
+  float Gconst;
 
 
-  planet* planets[];
+  planet **planets;
 
 
 
 public:
-  void addPlanet(planet newplanet);
-  mat diffEq(mat current_XV);
-  void calcSlope(mat current_XV);
-  void step();
 
-  diff_solver(int n_){
-    total_planets = 0;
+  mat diffEq(mat current_XV, planet *planets[], int n);
+  mat step(planet *planets[], int n,float deltaT);
+  void solve(planet *planets[], int n,float deltaT, int N,string filename);
+
+
+  diff_solver(float Gconst_,int n_,planet *planets_[n_]){
+    Gconst = Gconst_;
     n = n_;
+    //planet *planets[n] = planets_;
+    planets = planets_;
+    step(planets,n,0.001);
+    //planet *planets[n];
+    //planets = planets_;
   }
-
 };
 
 

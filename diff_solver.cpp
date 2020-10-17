@@ -1,103 +1,156 @@
-#include "diff_solver.hpp"
-#include "planet.h"
-
 #include <iostream>
 #include <armadillo>
+#include <fstream>
+#include "planet.h"
+#include "diff_solver.hpp"
 
 using namespace std;
 using namespace arma;
 
-
-void diff_solver::addPlanet(planet newplanet){
-  planets[total_planets] = &newplanet;
-  cout << planets[total_planets]->velocity[0] << endl;
-  total_planets+=1;
-  //cout << total_planets << endl;
-
-
+mat diff_solver::diffEq(mat current_XV, planet *planets[], int n){
+  float Gconst = 4*M_PI*M_PI;
+  mat dydt = zeros(n,6);
+  for(int i=0;i<n;i++){
+    for(int j=0;j<3;j++){
+      dydt(i,j) = current_XV(i,j+3);
+    }
 }
 
-mat diff_solver::diffEq(mat current_XV){
-
-  /*
-  planet *planets[4];
-  planets[0] = new planet();
-  planets[1] = new planet(3*1E-6,1,1,4,1,4*M_PI,5.5);
-  planets[2] = new planet(3*1E-6,2,0.5,5,3,4*M_PI,5);
-  planets[3] = new planet(3*1E-6,3,3,3,4,4*M_PI,6);
-  //MIDLERTIDIG
-  */
-  mat dydt = zeros(n,6);
-  /*
   for(int i=0;i<n;i++){
-    for(int j=3;j<6;j++){
-      dydt(i,j) = planets[i]->velocity[j-3];
-    }
-  }
-
-  float Gconst = 4*M_PI*M_PI;
-   //float Gconst = 6.67408*1E-11;
-
-  for(int i=0;i<n;i++){
-    vec a_i = zeros(3);
-    vec r_i = zeros(3);
-    vec r_j = zeros(3);
-    vec r_ij = zeros(3); //unit ngth
+    vec a_i = zeros(3); //Acceleration for planet i
+    vec r_i = zeros(3); //Vector from Origo to planet i
+    vec r_j = zeros(3); //Vector from Origo to planet j
+    vec r_ij = zeros(3); //Vector from planet i to planet j
 
     for(int k=0;k<3;k++){
-      r_i[k] = planets[i]->position[k];
-    }
+        r_i[k] = current_XV(i,k);
+      }
+      for(int j=0;j<n;j++){
 
-    for(int j=0;j<n;j++){
-      for(int k=0;k<3;k++){
-        r_j[k] = planets[j]->position[k];
+        for(int k=0;k<3;k++){
+          r_j[k] = current_XV(j,k);
+        }
+
+        if(j!=i){
+          if(norm(r_j-r_i,2)==0){
+            r_ij = zeros(3);
+          }
+          else{
+            r_ij = (r_i-r_j);
+          }
+        a_i = -Gconst * planets[j]->mass * 1/pow(norm(r_i-r_j),3) * r_ij + a_i;
       }
 
-      if(j!=i){
-        r_ij = (r_j-r_i)*.1/norm(r_j-r_i,2);
-        a_i = planets[i]->Acceleration(*planets[j],Gconst) * r_ij + a_i;
-      }
-    }
-    for(int k=0;k<3;k++){
-      dydt(i,k)=a_i(k);
-    }
   }
 
-
-  cout << dydt << endl;
-  */
+  for(int k=0;k<3;k++){
+    dydt(i,k+3)=a_i(k);
+  }
+}
   return dydt;
 }
 
 
-void diff_solver::calcSlope(mat current_XV){
 
-
-
-  mat k1 = diffEq(current_XV);
-  //mat k2 = diffEq(current_XV+deltaT,n)
-  cout << "calcSlope" << endl;
-  //Bruker verlet osv. Gi positions videre(opdater klasse?)
-  //diffEq(20);
-}
-
-
-
-void diff_solver::step(){
-  mat current_XV = zeros(6,n);
+mat diff_solver::step(planet *planets[], int n,float deltaT){
+  planets[1]->position[0]=2;
+  mat current_XV = zeros(n,6);
   //Updating current position
-  cout << planets[0]->position[1] << endl;
-  /*
   for(int i=0;i<n;i++){
     for(int j=0;j<3;j++){
-      current_XV(i,j) = planets[i].velocity[j];
+      current_XV(i,j) = planets[i]->position[j];
+      current_XV(i,j+3) = planets[i]->velocity[j];
+      }
     }
-    for(int j=3;j<n;j++){
-      current_XV(i,j) = planets[i].position[j];
-    }
-  }
-  calcSlope(current_XV);
-  */
-  //Update positions
 
+
+    //Euler-Cromer
+
+    mat next_XV = zeros(n,6);
+
+    mat dydt_next = zeros(n,6);
+    mat new_XV = zeros(n,6);
+
+    mat dydt = diffEq(current_XV, planets, n);
+    next_XV = dydt*deltaT + current_XV;
+    dydt_next = diffEq(next_XV, planets, n);
+
+    for(int i=0; i<n; i++){
+      for(int j=0;j<3;j++){
+        new_XV(i,j) = dydt_next(i,j)*deltaT+current_XV(i,j);
+        new_XV(i,j+3) = dydt(i,j+3)*deltaT + current_XV(i,j+3);
+      }
+    }
+    return new_XV;
+
+    /*
+    //Velocity-Verlet
+    mat new_XV = zeros(n,6);
+
+    mat dydt = diffEq(current_XV, planets, n);
+    mat next_XV = dydt*deltaT + current_XV;
+
+    mat dydt_next = diffEq(next_XV, planets, n);
+
+    for(int i=0;i<n;i++){
+      for(int j=0;j<3;j++){
+        new_XV(i,j) =current_XV(i,j)+deltaT*dydt(i,j)+deltaT*deltaT/2*dydt(i,j+3);
+        new_XV(i,j+3) = current_XV(i,j+3)+deltaT/2*(dydt_next(i,j+3)+dydt(i,j+3));
+      }
+    }
+    return new_XV;
+    */
+
+
+
+    /*
+    //Euler
+    mat dydt = zeros(n,6);
+    dydt = diffEq(current_XV, planets, n);
+    current_XV + dydt*deltaT;
+    */
+    /*
+    //RK4
+    mat k1 = diffEq(current_XV, planets, n);
+    mat k2 = diffEq(current_XV + k1*deltaT*1./2, planets, n);
+    mat k3 = diffEq(current_XV+k2*deltaT*1./2, planets, n);
+    mat k4 = diffEq(current_XV+k3*deltaT, planets, n);
+    dydt = (k1 + 2*k2 + 2*k3 + k4)/6;
+    return current_XV + dydt*deltaT;
+    */
+
+
+
+
+}
+
+void diff_solver::solve(planet *planets[], int n,float deltaT, int N,string filename){
+  ofstream outfile(filename);
+
+  vec t = linspace(0,N*deltaT,N);
+  outfile << "number_of_planets=" << n << " t:" << endl;
+  outfile << t.t() << endl;
+
+  mat current_XV = zeros(n,6);
+  //Updating current position
+  for(int i=0;i<n;i++){
+    for(int j=0;j<3;j++){
+      current_XV(i,j) = planets[i]->position[j];
+      current_XV(i,j+3) = planets[i]->velocity[j];
+      }
+    }
+
+  //outfile << current_XV << endl;
+
+  for(int i=0;i<N;i++){
+    mat new_XV = step(planets,n,deltaT);
+    for(int i=0;i<n;i++){
+      for(int j=0;j<3;j++){
+        planets[i]->position[j] = new_XV(i,j);
+        planets[i]->velocity[j] = new_XV(i,j+3);
+      }
+    }
+    outfile << new_XV << endl;
+  }
+  outfile.close();
 }
