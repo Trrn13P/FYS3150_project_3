@@ -3,8 +3,8 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <vector>
+
 #include <iostream>
-#include <string>
 using std::vector;
 
 class planet
