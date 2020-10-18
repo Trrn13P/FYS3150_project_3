@@ -3,18 +3,22 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <vector>
+#include <iostream>
+#include <string>
 using std::vector;
-
 
 class planet
 {
+
 public:
+
     // Properties
     double mass;
     double position[3];
     double velocity[3];
     double potential;
     double kinetic;
+    std::string planet_name;
 
     // Initializers
     planet();
