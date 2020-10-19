@@ -135,7 +135,7 @@ mat diff_solver::step(string method_){
 
 }
 
-void diff_solver::solve(float deltaT_, int N,string filename, string method_, string plot_type){
+void diff_solver::solve(float deltaT_, int N,string filename, string method_, string plot_type, int step_saved){
   method = method_;
   deltaT = deltaT_;
   vec t = linspace(0,N*deltaT,N);
@@ -153,7 +153,7 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
 
 
   ofstream outfile(filename);
-
+  int k = 0;
 
   if(plot_type=="Total_Energy"){
     float kinetic_energy, potential_energy, total_energy;
@@ -193,11 +193,22 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
   }
 
 
+  int timesteps_pr_year = 1./deltaT;
+  int interval, points_saved;
+  if(step_saved>timesteps_pr_year){
+    interval = 1;
+    points_saved = N;
+  }
+  else{
+    interval = timesteps_pr_year*1./step_saved;
+    points_saved = step_saved*1./timesteps_pr_year * N;
+  }
+
 
 
 
   if(plot_type=="Orbits"){
-    outfile << "number_of_planets=" << n << " integration_points=" << N <<
+    outfile << "number_of_planets=" << n << " points_saved=" << points_saved <<
     " method=" << method << " t:" << endl;
     outfile << t.t() << endl;
     outfile << current_XV << endl;
@@ -210,14 +221,13 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
           planets[i]->velocity[j] = new_XV(i,j+3);
         }
       }
+      k+=1;
+        if(k>=interval){
+          outfile << new_XV << endl;
+          k=0;
+        }
 
-      //cout << planets[1]->PotentialEnergy(*planets[0],Gconst,0.0) << endl;
-      //cout << planets[1]->KineticEnergy() << endl;
-      /*
-      cout <<
-        -Gconst*planets[0]->mass*planets[1]->mass*1./planets[0]->distance(*planets[1]) << endl;
-        */
-      outfile << new_XV << endl;
+
     }
     outfile.close();
   }

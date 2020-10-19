@@ -10,9 +10,9 @@ def eval_line(line):
 
 infile = open("./data/test.txt","r")
 first_line = infile.readline().split()
+number_of_planets = eval(first_line[0][18:])
+N = eval(first_line[1][13:])
 
-number_of_planets = eval(first_line[0][-1])
-N = eval(first_line[1][19:])
 
 t = infile.readline().split()
 infile.readline()
@@ -28,8 +28,8 @@ for i in range(N):
     for j in range(number_of_planets):
         line = infile.readline()
         line = eval_line(line)
-
         index = int(j*3)
+        #print(index)
         planets_X[i][index:index+3]=line[0:3]
     infile.readline()
 
@@ -39,6 +39,6 @@ for i in range(number_of_planets):
     index = int(i*3)
     plt.plot(planets_X[:,index],planets_X[:,index+1])
 
-plt.xlim(-10,10)
-plt.ylim(-10,10)
+#plt.xlim(-10,10)
+#plt.ylim(-10,10)
 plt.show()
