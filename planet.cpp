@@ -15,7 +15,7 @@ planet::planet()
     kinetic = 0.;
 }
 
-planet::planet(double M, double x, double y, double z, double vx, double vy, double vz)
+planet::planet(double M, double x, double y, double z, double vx, double vy, double vz, string planet_name_)
 {
     mass = M;
     position[0] = x;
@@ -26,6 +26,7 @@ planet::planet(double M, double x, double y, double z, double vx, double vy, dou
     velocity[2] = vz;
     potential = 0.;
     kinetic = 0.;
+    planet_name = planet_name_;
 }
 
 

@@ -22,7 +22,7 @@ public:
 
     // Initializers
     planet();
-    planet(double M,double x,double y,double z,double vx, double vy,double vz);
+    planet(double M,double x,double y,double z,double vx, double vy,double vz, std::string planet_name_);
 
     // Functions
     double distance(planet otherPlanet);

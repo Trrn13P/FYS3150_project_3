@@ -32,7 +32,7 @@ public:
 
   mat diffEq(mat current_XV);
   mat step(string method_);
-  void solve(float deltaT_, int N, string filename,string method_);
+  void solve(float deltaT_, int N, string filename,string method_,string plot_type);
 
 
   diff_solver(float Gconst_,float beta_,int n_,planet *planets_[n_]){
@@ -40,8 +40,8 @@ public:
     Gconst = Gconst_;
     beta = beta_;
     n = n_;
-    //planet *planets[n] = planets_;
     planets = planets_;
+
 
 
   }

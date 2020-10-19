@@ -135,15 +135,10 @@ mat diff_solver::step(string method_){
 
 }
 
-void diff_solver::solve(float deltaT_, int N,string filename, string method_){
+void diff_solver::solve(float deltaT_, int N,string filename, string method_, string plot_type){
   method = method_;
   deltaT = deltaT_;
-  ofstream outfile(filename);
-
   vec t = linspace(0,N*deltaT,N);
-  outfile << "number_of_planets=" << n << " integration_points=" << N
-  << " t:" << endl;
-  outfile << t.t() << endl;
 
   mat current_XV = zeros(n,6);
   //Updating current position
@@ -154,17 +149,76 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_){
       }
     }
 
-  outfile << current_XV << endl;
 
-  for(int i=0;i<N;i++){
-    mat new_XV = step(method);
-    for(int i=0;i<n;i++){
-      for(int j=0;j<3;j++){
-        planets[i]->position[j] = new_XV(i,j);
-        planets[i]->velocity[j] = new_XV(i,j+3);
+
+
+  ofstream outfile(filename);
+
+
+  if(plot_type=="Total_Energy"){
+    float kinetic_energy, potential_energy, total_energy;
+    outfile << "number_of_planets=" << n << " integration_points=" << N
+    << " method=" << method << endl;
+    outfile << "t: Total Energy:" << endl;
+    for(int steps=0;steps<N;steps++){
+      total_energy = 0;
+      kinetic_energy = 0;
+      potential_energy = 0;
+
+      for(int i=0;i<n;i++){
+        for(int k=0;k<n;k++){
+          if(i!=k){
+            potential_energy+=planets[i]->PotentialEnergy(*planets[k],Gconst,0.0);
+          }
+        }
+        kinetic_energy += planets[i]->KineticEnergy();
       }
+      total_energy = kinetic_energy+potential_energy;
+
+      //TOTAL ENERGY =SUM(KINETIC ENERGY+ SUM POTENTIAL)
+      outfile << t(steps) << " " << total_energy << endl;
+
+      mat new_XV = step(method);
+      for(int i=0;i<n;i++){
+        for(int j=0;j<3;j++){
+          planets[i]->position[j] = new_XV(i,j);
+          planets[i]->velocity[j] = new_XV(i,j+3);
+        }
+
+      }
+
+
     }
-    outfile << new_XV << endl;
+    outfile.close();
   }
-  outfile.close();
+
+
+
+
+
+  if(plot_type=="Orbits"){
+    outfile << "number_of_planets=" << n << " integration_points=" << N <<
+    " method=" << method << " t:" << endl;
+    outfile << t.t() << endl;
+    outfile << current_XV << endl;
+
+    for(int steps=0;steps<N;steps++){
+      mat new_XV = step(method);
+      for(int i=0;i<n;i++){
+        for(int j=0;j<3;j++){
+          planets[i]->position[j] = new_XV(i,j);
+          planets[i]->velocity[j] = new_XV(i,j+3);
+        }
+      }
+
+      //cout << planets[1]->PotentialEnergy(*planets[0],Gconst,0.0) << endl;
+      //cout << planets[1]->KineticEnergy() << endl;
+      /*
+      cout <<
+        -Gconst*planets[0]->mass*planets[1]->mass*1./planets[0]->distance(*planets[1]) << endl;
+        */
+      outfile << new_XV << endl;
+    }
+    outfile.close();
+  }
 }
