@@ -1,4 +1,4 @@
-CPPflags= c++ -o
+CPPflags= c++ -O3 -o
 LIB = -larmadillo -llapack -lblas
 
 all: compile execute
@@ -9,4 +9,4 @@ compile:
 
 execute:
 	./main.out
-	python3 ./planet_plot.py
+	#python3 ./planet_plot.py

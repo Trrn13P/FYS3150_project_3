@@ -1,15 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from eval_line import eval_line
 
 infile = open("./data/test_energi.txt","r")
 first_line = infile.readline()
 
-def eval_line(line):
-    line = line.split()
-    new_line = []
-    for i in line:
-        new_line.append(eval(i))
-    return new_line
 
 
 infile.readline()

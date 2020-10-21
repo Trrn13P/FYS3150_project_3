@@ -5,6 +5,10 @@
 #include "planet.h"
 #include "diff_solver.hpp"
 
+#include "time.h"
+
+
+
 using namespace std;
 using namespace arma;
 
@@ -20,11 +24,24 @@ mat diff_solver::diffEq(mat current_XV){
     vec a_i = zeros(3); //Acceleration for planet i
     vec r_i = zeros(3); //Vector from Origo to planet i
     vec r_j = zeros(3); //Vector from Origo to planet j
+    vec r_sun = zeros(3); //Vector from Origo to the sun
     vec r_ij = zeros(3); //Vector from planet i to planet j
+    vec velocity = zeros(3); //Velocity of planet i
+    for(int j=0;j<3;j++){
+      velocity[j] = current_XV(i,j+3);
+    }
+    //cout << velocity << endl;
+
+    float l = 0;
 
     for(int k=0;k<3;k++){
         r_i[k] = current_XV(i,k);
+        r_sun[k] = planets[0]->position[k];
       }
+
+    l = norm(cross(r_i-r_sun,velocity));
+
+
       for(int j=0;j<n;j++){
 
         for(int k=0;k<3;k++){
@@ -34,11 +51,26 @@ mat diff_solver::diffEq(mat current_XV){
         if(j!=i){
           if(norm(r_j-r_i,2)==0){
             r_ij = zeros(3);
+
           }
           else{
             r_ij = (r_i-r_j)*1/norm(r_i-r_j,2);
           }
-        a_i = -Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij + a_i;
+
+        if(relativistic_correction==true){
+
+
+
+          //cout << l << endl;
+          a_i += (-Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij) * (1+3*pow(l,2)*1/(powf(norm(r_i-r_j),beta)*pow(speed_of_light,2)));// * (1+3*l*l*1/(powf(norm(r_i-r_j),beta))*speed_of_light*speed_of_light)* r_ij+a_i;
+          //cout << -Gconst*1/powf(norm(r_i-r_j),beta)*planets[j]->mass << endl;
+          //cout << -Gconst*1/powf(norm(r_i-r_j),beta)*planets[j]->mass*(1+3*l*l*1/(powf(norm(r_i-r_j),beta))*speed_of_light*speed_of_light)* r_ij +a_i<< endl;
+          //cout << (1+3*pow(l,2)*1/(powf(norm(r_i-r_j),beta)*pow(speed_of_light,2))) << endl;
+        }
+        else{
+          a_i += -Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij;
+          //cout << a_i << endl;
+        }
       }
 
   }
@@ -109,9 +141,6 @@ mat diff_solver::step(string method_){
   }
 
 
-
-
-
     if(method=="RK4"){
     //RK4
     mat k1 = diffEq(current_XV);
@@ -135,7 +164,9 @@ mat diff_solver::step(string method_){
 
 }
 
-void diff_solver::solve(float deltaT_, int N,string filename, string method_, string plot_type, int step_saved){
+void diff_solver::solve(float deltaT_, int N,string filename, string method_, string plot_type, int step_saved, bool relativistic_correction_){
+
+  relativistic_correction = relativistic_correction_;
   method = method_;
   deltaT = deltaT_;
   vec t = linspace(0,N*deltaT,N);
@@ -213,6 +244,9 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
     outfile << t.t() << endl;
     outfile << current_XV << endl;
 
+    runtime = 0;
+    start = clock();
+
     for(int steps=0;steps<N;steps++){
       mat new_XV = step(method);
       for(int i=0;i<n;i++){
@@ -229,6 +263,65 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
 
 
     }
+    finish = clock();
+    runtime += ( (finish - start)*1./CLOCKS_PER_SEC );
     outfile.close();
   }
+}
+
+float diff_solver::solve_test(float deltaT_, int N, string method_, bool relativistic_correction_){
+
+  relativistic_correction = relativistic_correction_;
+  method = method_;
+  deltaT = deltaT_;
+  vec t = linspace(0,N*deltaT,N);
+
+  mat current_XV = zeros(n,6);
+  //Updating current position
+  for(int i=0;i<n;i++){
+    for(int j=0;j<3;j++){
+      current_XV(i,j) = planets[i]->position[j];
+      current_XV(i,j+3) = planets[i]->velocity[j];
+      }
+    }
+
+  int k = 0;
+  float kinetic_energy, potential_energy, total_energy;
+
+  runtime = 0;
+  start = clock();
+
+    for(int steps=0;steps<N;steps++){
+      total_energy = 0;
+      kinetic_energy = 0;
+      potential_energy = 0;
+
+      for(int i=0;i<n;i++){
+        for(int k=0;k<n;k++){
+          if(i!=k){
+            potential_energy+=planets[i]->PotentialEnergy(*planets[k],Gconst,0.0);
+          }
+        }
+        kinetic_energy += planets[i]->KineticEnergy();
+      }
+      total_energy = kinetic_energy+potential_energy;
+
+
+
+      mat new_XV = step(method);
+      for(int i=0;i<n;i++){
+        for(int j=0;j<3;j++){
+          planets[i]->position[j] = new_XV(i,j);
+          planets[i]->velocity[j] = new_XV(i,j+3);
+        }
+
+      }
+
+
+    }
+    finish = clock();
+    runtime += ( (finish - start)*1./CLOCKS_PER_SEC );
+
+
+return total_energy;
 }

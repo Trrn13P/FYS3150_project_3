@@ -15,6 +15,7 @@ private:
   int n;
   //gravitational constant
   float Gconst;
+  bool relativistic_correction;
 
   float deltaT;
 
@@ -23,26 +24,28 @@ private:
   int error_message;
 
   float beta;
+  float speed_of_light; // AU/yr;
 
   planet **planets;
 
 
 
 public:
+  float runtime, start, finish;
 
   mat diffEq(mat current_XV);
   mat step(string method_);
-  void solve(float deltaT_, int N, string filename,string method_,string plot_type, int step_saved);
+  void solve(float deltaT_, int N, string filename,string method_,string plot_type, int step_saved,bool relativistic_correction_);
+  float solve_test(float deltaT_, int N, string method_, bool relativistic_correction_);
 
 
   diff_solver(float Gconst_,float beta_,int n_,planet *planets_[n_]){
+    speed_of_light = 63239.7263; // AU/yr;
     error_message = 1;
     Gconst = Gconst_;
     beta = beta_;
     n = n_;
     planets = planets_;
-
-
 
   }
 };
