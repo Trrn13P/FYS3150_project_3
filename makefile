@@ -9,4 +9,3 @@ compile:
 
 execute:
 	./main.out
-	#python3 ./planet_plot.py

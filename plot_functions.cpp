@@ -4,17 +4,23 @@
 #include "planet.h"
 #include "diff_solver.hpp"
 
+//function that gives you the scaled solar mass when you input the mass
 float solar_mass(float mass){
   float mass_sun = 1.989*1E30;
   return mass*1./mass_sun;
 }
+
+//function that gives the au pr year if you input the au pr day
 float au_pr_yr(float pr_day){
   return pr_day*365.24;
 }
 
+//this function saves datapoints for all planets
 void all_panets_plot(float Gconst, float beta, float deltaT, int T, string filename, string method, int saved_timesteps, bool relativistic_correction){
+  //calculating the number of integration points
   int N = T*1./deltaT;
 
+  //plot_type Orbits gives the data points of the orbits
   string plot_type = "Orbits";
   int n = 13; //number of planets
   planet *planets[n];
@@ -23,8 +29,6 @@ void all_panets_plot(float Gconst, float beta, float deltaT, int T, string filen
     planets[0] = new planet(1,
     -6.005339779329579E-03,6.491104601150000E-03,8.587420750830977E-05,
     au_pr_yr(-7.374879897223016E-06),au_pr_yr(-4.969570018104684E-06),au_pr_yr(2.194527060357223E-07), "Sun");
-
-    //planets[0] = new planet();
 
     //Mercury
     planets[1] = new planet(solar_mass(3.302*1E23),
@@ -94,14 +98,14 @@ void all_panets_plot(float Gconst, float beta, float deltaT, int T, string filen
     diff_solver *all_planets;
     all_planets = new diff_solver(Gconst,beta,n,planets);
     all_planets->solve(deltaT,N,filename,method,plot_type,saved_timesteps, relativistic_correction);
-    cout << all_planets->runtime << endl;
 }
 
 void check_runtime(float Gconst, float beta, int T, string filename, bool relativistic_correction){
-
+  /* This function gives the runtime for the earth-sun case with the different methods*/
   int n = 2; //number of planets
   planet *planets[n];
 
+  //calculating scaled earth mass
   float earth_over_sun = solar_mass(5.972*1E24);
 
   //PLANETS
@@ -117,8 +121,11 @@ void check_runtime(float Gconst, float beta, int T, string filename, bool relati
   outfile << "deltaT in yr, runtime in seconds" << endl;
   outfile << "deltaT: Euler: Euler-Cromer: Velocity-Verlet: RK4:" << endl;
 
+  //going through every method for every deltaT
   int N;
+  //checking differnt methods
   string methods[] = {"Euler","Euler-Cromer","Velocity-Verlet", "RK4"};
+  //checking different deltaTs
   float deltaTs[] = {1E-1,1E-2,1E-3,1E-4,1E-5};
   string method;
   for(int j=0;j<5;j++){
@@ -134,10 +141,13 @@ void check_runtime(float Gconst, float beta, int T, string filename, bool relati
   outfile << "\n";
   }
   outfile.close();
-
 }
 
 void check_stability(float Gconst, float beta, int T, string filename, bool relativistic_correction){
+  /* This function checks the stability of the different methods for different timesteps. Checking
+  if energy is conserved. */
+
+  //calculating the scaled earth mass
   float earth_over_sun = solar_mass(5.972*1E24);
 
   int n = 2; //number of planets
@@ -178,7 +188,7 @@ void check_stability(float Gconst, float beta, int T, string filename, bool rela
   outfile << "K U e E_tot" << endl;
   outfile << "deltaT: Euler: Euler-Cromer: Velocity-Verlet: RK4:" << endl;
 
-
+  //going through every method for every deltaT
   int N;
   string methods[] = {"Euler","Euler-Cromer","Velocity-Verlet", "RK4"};
   float deltaTs[] = {1E-1,1E-2,1E-3,1E-4,1E-5};

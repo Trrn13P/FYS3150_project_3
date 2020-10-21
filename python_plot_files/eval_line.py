@@ -1,3 +1,4 @@
+#This function takes in a line of numbers-strings separated by space and evaluates them
 def eval_line(line):
     line = line.split()
     new_line = []

@@ -27,23 +27,24 @@ mat diff_solver::diffEq(mat current_XV){
     vec r_sun = zeros(3); //Vector from Origo to the sun
     vec r_ij = zeros(3); //Vector from planet i to planet j
     vec velocity = zeros(3); //Velocity of planet i
+
+    //Updating velocity vector
     for(int j=0;j<3;j++){
       velocity[j] = current_XV(i,j+3);
     }
-    //cout << velocity << endl;
 
-    float l = 0;
 
+    //Updating positions
     for(int k=0;k<3;k++){
         r_i[k] = current_XV(i,k);
         r_sun[k] = planets[0]->position[k];
       }
 
-    l = norm(cross(r_i-r_sun,velocity));
+      //angular momentum
+      float l = norm(cross(r_i-r_sun,velocity));
 
 
       for(int j=0;j<n;j++){
-
         for(int k=0;k<3;k++){
           r_j[k] = current_XV(j,k);
         }
@@ -57,19 +58,12 @@ mat diff_solver::diffEq(mat current_XV){
             r_ij = (r_i-r_j)*1/norm(r_i-r_j,2);
           }
 
+        //calulating acceleration from every planet
         if(relativistic_correction==true){
-
-
-
-          //cout << l << endl;
-          a_i += (-Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij) * (1+3*pow(l,2)*1/(powf(norm(r_i-r_j),beta)*pow(speed_of_light,2)));// * (1+3*l*l*1/(powf(norm(r_i-r_j),beta))*speed_of_light*speed_of_light)* r_ij+a_i;
-          //cout << -Gconst*1/powf(norm(r_i-r_j),beta)*planets[j]->mass << endl;
-          //cout << -Gconst*1/powf(norm(r_i-r_j),beta)*planets[j]->mass*(1+3*l*l*1/(powf(norm(r_i-r_j),beta))*speed_of_light*speed_of_light)* r_ij +a_i<< endl;
-          //cout << (1+3*pow(l,2)*1/(powf(norm(r_i-r_j),beta)*pow(speed_of_light,2))) << endl;
+          a_i += (-Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij) * (1+3*pow(l,2)*1/(powf(norm(r_i-r_j),beta)*pow(speed_of_light,2)));
         }
         else{
           a_i += -Gconst * planets[j]->mass * 1/powf(norm(r_i-r_j),beta) * r_ij;
-          //cout << a_i << endl;
         }
       }
 
@@ -122,7 +116,6 @@ mat diff_solver::step(string method_){
     }
 
     if(method=="Velocity-Verlet"){
-
     //Velocity-Verlet
     mat new_XV = zeros(n,6);
 
@@ -182,10 +175,11 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
 
 
 
-
+  //starting outfile write
   ofstream outfile(filename);
   int k = 0;
 
+  //This is for total energy plot in every timestep
   if(plot_type=="Total_Energy"){
     float kinetic_energy, potential_energy, total_energy;
     outfile << "number_of_planets=" << n << " integration_points=" << N
@@ -204,26 +198,27 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
         }
         kinetic_energy += planets[i]->KineticEnergy();
       }
+      //updating the total energy
       total_energy = kinetic_energy+potential_energy;
 
-      //TOTAL ENERGY =SUM(KINETIC ENERGY+ SUM POTENTIAL)
+
       outfile << t(steps) << " " << total_energy << endl;
 
       mat new_XV = step(method);
+      //updating position with new steps
       for(int i=0;i<n;i++){
         for(int j=0;j<3;j++){
           planets[i]->position[j] = new_XV(i,j);
           planets[i]->velocity[j] = new_XV(i,j+3);
         }
-
       }
-
-
     }
     outfile.close();
   }
 
 
+
+  //making an interval that says how many points between every saved step
   int timesteps_pr_year = 1./deltaT;
   int interval, points_saved;
   if(step_saved>timesteps_pr_year){
@@ -235,9 +230,7 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
     points_saved = step_saved*1./timesteps_pr_year * N;
   }
 
-
-
-
+  //Plotting
   if(plot_type=="Orbits"){
     outfile << "number_of_planets=" << n << " points_saved=" << points_saved <<
     " method=" << method << " t:" << endl;
@@ -260,8 +253,6 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
           outfile << new_XV << endl;
           k=0;
         }
-
-
     }
     finish = clock();
     runtime += ( (finish - start)*1./CLOCKS_PER_SEC );
@@ -270,7 +261,8 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
 }
 
 float diff_solver::solve_test(float deltaT_, int N, string method_, bool relativistic_correction_){
-
+  /* In this function we basically do the same as in solve except we return the total energy instead
+  of saving timesteps (yes, I know solve and solve_test could be combined)*/
   relativistic_correction = relativistic_correction_;
   method = method_;
   deltaT = deltaT_;
@@ -306,22 +298,16 @@ float diff_solver::solve_test(float deltaT_, int N, string method_, bool relativ
       }
       total_energy = kinetic_energy+potential_energy;
 
-
-
       mat new_XV = step(method);
       for(int i=0;i<n;i++){
         for(int j=0;j<3;j++){
           planets[i]->position[j] = new_XV(i,j);
           planets[i]->velocity[j] = new_XV(i,j+3);
         }
-
       }
-
-
     }
     finish = clock();
     runtime += ( (finish - start)*1./CLOCKS_PER_SEC );
-
 
 return total_energy;
 }

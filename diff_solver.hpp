@@ -15,24 +15,29 @@ private:
   int n;
   //gravitational constant
   float Gconst;
+  //true of false relativistic correction
   bool relativistic_correction;
-
+  //timestep deltaT
   float deltaT;
 
+  //integration method
   string method;
-
+  //0 if error message, 1 if not, it shows if you input a invalid integration method
   int error_message;
 
   float beta;
   float speed_of_light; // AU/yr;
 
+  //pointer to all planets
   planet **planets;
 
 
 
 public:
+  //runtime for time it takes to integrate, start is start of integration, finish is end of integration
   float runtime, start, finish;
 
+  //all functions
   mat diffEq(mat current_XV);
   mat step(string method_);
   void solve(float deltaT_, int N, string filename,string method_,string plot_type, int step_saved,bool relativistic_correction_);

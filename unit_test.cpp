@@ -8,6 +8,8 @@
 
 using namespace std;
 
+/*HERE WE ARE TESTING ENERGY CONSERVED AND MOMENTUM CONSERVED
+*/
 TEST_CASE("ENERGY_AMOM_CONSERVED"){
   int n = 2; //number of planets
   float earth_over_sun = 3.0025*1E-6;
