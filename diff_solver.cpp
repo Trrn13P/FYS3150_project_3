@@ -14,6 +14,7 @@ using namespace arma;
 
 mat diff_solver::diffEq(mat current_XV){
   mat dydt = zeros(n,6);
+  //Filling in previous velocity values for updating the position
   for(int i=0;i<n;i++){
     for(int j=0;j<3;j++){
       dydt(i,j) = current_XV(i,j+3);
@@ -34,7 +35,7 @@ mat diff_solver::diffEq(mat current_XV){
     }
 
 
-    //Updating positions
+
     for(int k=0;k<3;k++){
         r_i[k] = current_XV(i,k);
         r_sun[k] = planets[0]->position[k];
@@ -43,12 +44,13 @@ mat diff_solver::diffEq(mat current_XV){
       //angular momentum
       float l = norm(cross(r_i-r_sun,velocity));
 
-
       for(int j=0;j<n;j++){
         for(int k=0;k<3;k++){
           r_j[k] = current_XV(j,k);
         }
 
+        //This makes it so no acceleration is calculated for planet i on planet i,
+        //this would get a 0-divide and inf acceleration error.
         if(j!=i){
           if(norm(r_j-r_i,2)==0){
             r_ij = zeros(3);
@@ -83,7 +85,9 @@ mat diff_solver::step(string method_){
   //Updating current position
   for(int i=0;i<n;i++){
     for(int j=0;j<3;j++){
+      //Getting the current position from the planet class
       current_XV(i,j) = planets[i]->position[j];
+      //Getting the current velocity from the planet class
       current_XV(i,j+3) = planets[i]->velocity[j];
       }
     }
@@ -165,15 +169,13 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
   vec t = linspace(0,N*deltaT,N);
 
   mat current_XV = zeros(n,6);
-  //Updating current position
+  //Updating current position for writing the first timestep
   for(int i=0;i<n;i++){
     for(int j=0;j<3;j++){
       current_XV(i,j) = planets[i]->position[j];
       current_XV(i,j+3) = planets[i]->velocity[j];
       }
     }
-
-
 
   //starting outfile write
   ofstream outfile(filename);
@@ -238,8 +240,10 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
     outfile << current_XV << endl;
 
     runtime = 0;
+    //Starting clock for timing the runtime
     start = clock();
 
+    //Starting integration
     for(int steps=0;steps<N;steps++){
       mat new_XV = step(method);
       for(int i=0;i<n;i++){
@@ -248,14 +252,16 @@ void diff_solver::solve(float deltaT_, int N,string filename, string method_, st
           planets[i]->velocity[j] = new_XV(i,j+3);
         }
       }
+      //To save space in our textfile we don't save every timestep
       k+=1;
         if(k>=interval){
           outfile << new_XV << endl;
           k=0;
         }
     }
+    //Ending the clock and saving the value
     finish = clock();
-    runtime += ( (finish - start)*1./CLOCKS_PER_SEC );
+    runtime = ( (finish - start)*1./CLOCKS_PER_SEC );
     outfile.close();
   }
 }
