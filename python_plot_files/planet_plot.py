@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from eval_line import eval_line
 
-
-infile = open("../data/test.txt","r")
+filename = "test.txt"
+infile = open("../data/"+filename,"r")
 first_line = infile.readline().split()
 number_of_planets = eval(first_line[0][18:])
 N = eval(first_line[1][13:])
